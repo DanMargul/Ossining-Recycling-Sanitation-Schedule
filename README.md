@@ -1,1 +1,1 @@
-# Ossining-Recycling-Sanitation-Schedule
+# Ossining Recycling & Sanitation Schedule
