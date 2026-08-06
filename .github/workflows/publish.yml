@@ -1,0 +1,66 @@
+name: Publish calendars
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest icalendar
+      - run: pytest -q
+      - name: Generate site
+        run: |
+          mkdir -p site
+          cp index.html site/
+          python ossining_calendar.py --out site
+          python calendar_feed.py --out site
+          for zone in 1 2; do
+            cp "site/$(date +%Y)_calendar_zone_$zone.svg" "site/zone-$zone-calendar.svg"
+          done
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install icalendar
+      - name: Wait for the deploy to settle
+        run: sleep 20
+      - name: Check the published feeds
+        run: python check_published_feeds.py "${{ needs.deploy.outputs.page_url }}"
