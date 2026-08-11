@@ -51,6 +51,8 @@
     margin: .35rem 0 .75rem;
   }
 
+  .standfirst { font-size: 1.05rem; max-width: 32rem; margin: 0; }
+
   .zone {
     position: relative;
     border: var(--rule);
@@ -156,7 +158,20 @@
 
   .note p { margin: 0 0 1rem; max-width: 34rem; }
 
+  .rule-line {
+    font-family: var(--display);
+    font-size: 1.15rem;
+    border-left: .5rem solid var(--electronics);
+    padding-left: .75rem;
+  }
+
   main > :last-child > :last-child { margin-bottom: 0; }
+
+  code {
+    font-size: .85em;
+    background: var(--garbage);
+    padding: .1em .35em;
+  }
 </style>
 </head>
 <body>
@@ -177,9 +192,9 @@
     <div class="day"><b>F</b><span>No collection</span></div>
   </div>
   <div class="actions">
-    <a class="button primary" data-subscribe="1" href="#">Subscribe on iPhone</a>
-    <button type="button" data-copy="1">Copy link for Google Calendar</button>
-    <a class="button" href="zone-1-calendar.svg">Printable calendar</a>
+    <a class="button" data-subscribe="1" href="#">Apple Calendar</a>
+    <button type="button" data-copy="1">Google Calendar</button>
+    <a class="button" href="zone-1-calendar.svg">Print Calendar</a>
   </div>
 </section>
 
@@ -193,9 +208,9 @@
     <div class="day flagged" style="--flag: var(--electronics);"><b>F</b><span>Garbage + metal, electronics</span></div>
   </div>
   <div class="actions">
-    <a class="button primary" data-subscribe="2" href="#">Subscribe on iPhone</a>
-    <button type="button" data-copy="2">Copy link for Google Calendar</button>
-    <a class="button" href="zone-2-calendar.svg">Printable calendar</a>
+    <a class="button" data-subscribe="2" href="#">Apple Calendar</a>
+    <button type="button" data-copy="2">Google Calendar</button>
+    <a class="button" href="zone-2-calendar.svg">Print Calendar</a>
   </div>
 </section>
 
