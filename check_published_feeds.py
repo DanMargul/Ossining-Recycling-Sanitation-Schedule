@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import urllib.error
 import urllib.request
-from datetime import date
+from datetime import date, timedelta
 
 from icalendar import Calendar
 
 from calendar_feed import FEED_FILENAME_TEMPLATE
 from ossining_calendar import ZONES
+from schedule_json import SCHEDULE_FILENAME
 
 EXPECTED_CONTENT_TYPE = "text/calendar"
+EXPECTED_CONTENT_TYPE_JSON = "application/json"
 MINIMUM_EVENTS = 100
 FETCH_TIMEOUT_SECONDS = 30
 USER_AGENT = "ossining-calendar-feed-check"
@@ -67,6 +70,36 @@ def check_feed(url: str, today: date) -> list[str]:
     return warnings
 
 
+def check_schedule(url: str, today: date) -> list[str]:
+    body, content_type = fetch(url)
+    warnings = []
+
+    if not content_type.startswith(EXPECTED_CONTENT_TYPE_JSON):
+        warnings.append(f"served as {content_type or 'no Content-Type'}")
+
+    try:
+        document = json.loads(body)
+    except ValueError as error:
+        raise FeedProblem(f"does not parse as JSON: {error}") from error
+
+    monday = today - timedelta(days=today.weekday())
+    this_week = [(monday + timedelta(days=offset)).isoformat() for offset in range(5)]
+
+    for zone in ZONES:
+        collections = document.get("zones", {}).get(str(zone))
+        if not collections:
+            raise FeedProblem(f"no entries for zone {zone}")
+        if not any(day in collections for day in this_week):
+            raise FeedProblem(
+                f"zone {zone} has nothing for the week of {monday} "
+                f"(the page would fall back to a typical week)"
+            )
+
+    covered = sorted(day for zone in document["zones"].values() for day in zone)
+    print(f"  covers {covered[0]} to {covered[-1]}, this week present")
+    return warnings
+
+
 def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Verify that published feeds are reachable and usable."
@@ -96,6 +129,16 @@ def main(argv: list[str] | None = None) -> int:
         except FeedProblem as problem:
             print(f"  FAILED: {problem}")
             failures += 1
+
+    schedule_url = f"{base_url}/{SCHEDULE_FILENAME}"
+    print(f"checking {schedule_url}")
+    try:
+        for warning in check_schedule(schedule_url, today):
+            print(f"  WARNING: {warning}")
+            warnings += 1
+    except FeedProblem as problem:
+        print(f"  FAILED: {problem}")
+        failures += 1
 
     if failures:
         return 1
