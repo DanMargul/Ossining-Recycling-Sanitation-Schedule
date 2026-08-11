@@ -32,6 +32,7 @@ jobs:
           cp index.html site/
           python ossining_calendar.py --out site
           python calendar_feed.py --out site
+          python schedule_json.py --out site
           for zone in 1 2; do
             cp "site/$(date +%Y)_calendar_zone_$zone.svg" "site/zone-$zone-calendar.svg"
           done
