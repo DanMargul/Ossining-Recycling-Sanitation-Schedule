@@ -75,6 +75,14 @@
     margin: 0 0 .9rem;
   }
 
+  .week-label {
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: 0 0 .75rem;
+  }
+
   .week {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -105,8 +113,22 @@
 
   .day b {
     display: block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+
+  .day .date {
+    display: block;
     font-family: var(--display);
-    font-size: 1.15rem;
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .day.today {
+    border-width: 4px;
+    transform: translateY(-6px);
+    z-index: 2;
   }
 
   .day .icon {
@@ -144,7 +166,6 @@
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
-    text-align: center;
   }
 
   a.button.primary { background: var(--ink); color: var(--page); }
@@ -216,8 +237,9 @@
   <h1>Sanitation &amp; Recycling</h1>
 </header>
 
-<section class="zone" style="--flag: var(--large-other);">
+<section class="zone" data-zone="1" style="--flag: var(--large-other);">
   <h2>Zone 1</h2>
+  <p class="week-label">A typical week</p>
   <div class="week">
     <div class="day flagged" style="--flag: var(--large-other);"><b>M</b>
     <svg class="icon" aria-hidden="true"><use href="#icon-garbage"/></svg>
@@ -241,8 +263,9 @@
   </div>
 </section>
 
-<section class="zone" style="--flag: var(--electronics);">
+<section class="zone" data-zone="2" style="--flag: var(--electronics);">
   <h2>Zone 2</h2>
+  <p class="week-label">A typical week</p>
   <div class="week">
     <div class="day" style="--fill: var(--yard);"><b>M</b>
     <svg class="icon" aria-hidden="true"><use href="#icon-leaf"/></svg>
@@ -275,6 +298,78 @@
 </main>
 
 <script>
+  const DAY_LETTERS = ["M", "T", "W", "Th", "F"];
+
+  const PICKUPS = {
+    garbage:             { fill: "garbage",   icon: "garbage",   label: "Garbage" },
+    paper:               { fill: "paper",     icon: "recycling", label: "Recycling: paper" },
+    metal_plastic_glass: { fill: "comingled", icon: "recycling", label: "Recycling: metal, plastic and glass" },
+    yard_waste:          { fill: "yard",      icon: "leaf",      label: "Yard waste" },
+    large_metal_and_electronics:
+      { flag: "electronics",  icon: "garbage", label: "Garbage and large metal or electronics" },
+    other_large_items:
+      { flag: "large-other",  icon: "garbage", label: "Garbage and other large items" }
+  };
+
+  const localDate = date =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` +
+    `-${String(date.getDate()).padStart(2, "0")}`;
+
+  function thisWeek() {
+    const now = new Date();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    return DAY_LETTERS.map((_, offset) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + offset);
+      return day;
+    });
+  }
+
+  function paint(cell, letter, date, pickupKey, isToday) {
+    const pickup = PICKUPS[pickupKey];
+    cell.className = "day" + (pickup && pickup.flag ? " flagged" : "") + (isToday ? " today" : "");
+    cell.removeAttribute("style");
+    if (pickup) {
+      const swatch = pickup.flag || pickup.fill;
+      cell.style.setProperty(pickup.flag ? "--flag" : "--fill", `var(--${swatch})`);
+    }
+    const icon = pickup
+      ? `<svg class="icon" aria-hidden="true"><use href="#icon-${pickup.icon}"/></svg>`
+      : "";
+    cell.innerHTML =
+      `<b>${letter}</b><span class="date">${date.getDate()}</span>${icon}` +
+      `<span class="sr-only">${pickup ? pickup.label : "No collection"}</span>`;
+  }
+
+  async function showThisWeek() {
+    let schedule;
+    try {
+      const response = await fetch("schedule.json", { cache: "no-cache" });
+      if (!response.ok) throw new Error(response.status);
+      schedule = await response.json();
+    } catch {
+      return;
+    }
+
+    const dates = thisWeek();
+    const keys = dates.map(localDate);
+    const today = localDate(new Date());
+    const caption = dates[0].toLocaleDateString(undefined, { month: "long", day: "numeric" });
+
+    for (const section of document.querySelectorAll("[data-zone]")) {
+      const collections = schedule.zones[section.dataset.zone];
+      if (!collections || !keys.some(key => key in collections)) continue;
+
+      section.querySelectorAll(".day").forEach((cell, index) => {
+        paint(cell, DAY_LETTERS[index], dates[index], collections[keys[index]], keys[index] === today);
+      });
+      section.querySelector(".week-label").textContent = `Week of ${caption}`;
+    }
+  }
+
+  showThisWeek();
+
   const feedUrl = zone =>
     new URL(`zone-${zone}.ics`, window.location.href).href;
 
