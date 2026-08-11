@@ -1,6 +1,6 @@
 # [(Readable) Ossining Recycling & Sanitation Schedule](https://www.ossining.info)
 
-<img width="546" height="869" alt="image" src="https://github.com/user-attachments/assets/72bda958-f674-427a-ad78-1179f73b15e1" />
+<img width="546" height="848" alt="image" src="https://github.com/user-attachments/assets/5a10a3d1-f4c3-4eb7-b9cf-b4a86c54a55d" />
 
 
 In 2023, I redesigned the sanitation and recycling calendar so that I could more easily use it. I wanted to address a few things about [the official calendar](https://www.villageofossiningny.gov/public-works/pages/sanitation-recycling):
