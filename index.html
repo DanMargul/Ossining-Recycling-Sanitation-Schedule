@@ -75,11 +75,19 @@
     margin: 0 0 .9rem;
   }
 
+  .exceptions {
+    font-size: .9rem;
+    border-left: .5rem solid var(--large-other);
+    padding-left: .75rem;
+    max-width: 34rem;
+  }
+
   .week-label {
-    font-size: .8rem;
+    width: 0;
+    min-width: 100%;
+    font-size: .95rem;
     font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
+    letter-spacing: .01em;
     margin: 0 0 .75rem;
   }
 
@@ -125,7 +133,7 @@
     line-height: 1.1;
   }
 
-  .day.today {
+  .day.focus {
     border-width: 4px;
     transform: translateY(-6px);
     z-index: 2;
@@ -291,7 +299,7 @@
 
 <section class="note">
   <h2>Which zone am I in?</h2>
-  <p>The Village has this information <a href="https://www.villageofossiningny.gov/public-works/pages/sanitation-recycling">here</a>.</p>
+  <p>The Village also publishes this information <a href="https://www.villageofossiningny.gov/public-works/pages/sanitation-recycling">here</a>.</p>
 
 </section>
 
@@ -301,34 +309,82 @@
   const DAY_LETTERS = ["M", "T", "W", "Th", "F"];
 
   const PICKUPS = {
-    garbage:             { fill: "garbage",   icon: "garbage",   label: "Garbage" },
-    paper:               { fill: "paper",     icon: "recycling", label: "Recycling: paper" },
-    metal_plastic_glass: { fill: "comingled", icon: "recycling", label: "Recycling: metal, plastic and glass" },
-    yard_waste:          { fill: "yard",      icon: "leaf",      label: "Yard waste" },
-    large_metal_and_electronics:
-      { flag: "electronics",  icon: "garbage", label: "Garbage and large metal or electronics" },
-    other_large_items:
-      { flag: "large-other",  icon: "garbage", label: "Garbage and other large items" }
+    garbage: {
+      fill: "garbage", icon: "garbage",
+      label: "Garbage", short: "Garbage" },
+    paper: {
+      fill: "paper", icon: "recycling",
+      label: "Recycling: paper", short: "Paper recycling" },
+    metal_plastic_glass: {
+      fill: "comingled", icon: "recycling",
+      label: "Recycling: metal, plastic and glass", short: "Metal, plastic & glass" },
+    yard_waste: {
+      fill: "yard", icon: "leaf",
+      label: "Yard waste", short: "Yard waste" },
+    large_metal_and_electronics: {
+      flag: "electronics", icon: "garbage",
+      label: "Garbage and large metal or electronics",
+      short: "Garbage + metal/electronics" },
+    other_large_items: {
+      flag: "large-other", icon: "garbage",
+      label: "Garbage and other large items",
+      short: "Garbage + large items" }
   };
 
   const localDate = date =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` +
     `-${String(date.getDate()).padStart(2, "0")}`;
 
-  function thisWeek() {
-    const now = new Date();
+  const EVENING_STARTS = 17;
+
+  const isWeekendWindow = now => {
+    const day = now.getDay();
+    const evening = now.getHours() >= EVENING_STARTS;
+    return (day === 5 && evening) || day === 6 || (day === 0 && !evening);
+  };
+
+  const showsNextWeek = now => {
+    const day = now.getDay();
+    return day === 6 || day === 0 || (day === 5 && now.getHours() >= EVENING_STARTS);
+  };
+
+  function weekOf(now) {
     const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    const day = monday.getDay();
+    monday.setDate(
+      monday.getDate() + (showsNextWeek(now) ? (8 - day) % 7 || 7 : -((day + 6) % 7))
+    );
     return DAY_LETTERS.map((_, offset) => {
-      const day = new Date(monday);
-      day.setDate(monday.getDate() + offset);
-      return day;
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offset);
+      return date;
     });
   }
 
-  function paint(cell, letter, date, pickupKey, isToday) {
+  function focusDate(now) {
+    if (isWeekendWindow(now)) return null;
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= EVENING_STARTS) date.setDate(date.getDate() + 1);
+    return date;
+  }
+
+  function caption(now, collections, week) {
+    const focus = focusDate(now);
+    if (!focus) {
+      const starts = week[0].toLocaleDateString(undefined, { month: "long", day: "numeric" });
+      return `Week of ${starts}`;
+    }
+
+    const pickup = PICKUPS[collections[localDate(focus)]];
+    if (now.getHours() >= EVENING_STARTS) {
+      return pickup ? `Tomorrow morning: ${pickup.short}` : "Nothing out tomorrow";
+    }
+    return pickup ? `Today: ${pickup.short}` : "No collection today";
+  }
+
+  function paint(cell, letter, date, pickupKey, isFocus) {
     const pickup = PICKUPS[pickupKey];
-    cell.className = "day" + (pickup && pickup.flag ? " flagged" : "") + (isToday ? " today" : "");
+    cell.className = "day" + (pickup && pickup.flag ? " flagged" : "") + (isFocus ? " focus" : "");
     cell.removeAttribute("style");
     if (pickup) {
       const swatch = pickup.flag || pickup.fill;
@@ -342,7 +398,7 @@
       `<span class="sr-only">${pickup ? pickup.label : "No collection"}</span>`;
   }
 
-async function showThisWeek() {
+  async function showThisWeek() {
     let schedule;
     try {
       const response = await fetch("schedule.json", { cache: "no-cache" });
@@ -355,19 +411,51 @@ async function showThisWeek() {
       return;
     }
 
-    const dates = thisWeek();
+    render(schedule);
+
+    const atNextMinute = 60000 - (Date.now() % 60000) + 500;
+    setTimeout(function tick() {
+      render(schedule);
+      setTimeout(tick, 60000);
+    }, atNextMinute);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) render(schedule);
+    });
+  }
+
+  let lastRendered = null;
+
+  function render(schedule) {
+    const now = new Date();
+    const dates = weekOf(now);
     const keys = dates.map(localDate);
-    const today = localDate(new Date());
-    const caption = dates[0].toLocaleDateString(undefined, { month: "long", day: "numeric" });
+    const focus = focusDate(now);
+    const focusKey = focus ? localDate(focus) : null;
+
+    const state = [
+      keys[0],
+      focusKey,
+      now.getHours() >= EVENING_STARTS,
+      isWeekendWindow(now)
+    ].join("|");
+    if (state === lastRendered) return;
+    lastRendered = state;
 
     for (const section of document.querySelectorAll("[data-zone]")) {
       const collections = schedule.zones[section.dataset.zone];
-      if (!collections || !keys.some(key => key in collections)) continue;
+      if (!collections || !keys.some(key => key in collections)) {
+        console.warn(
+          `Showing a typical week for zone ${section.dataset.zone}: ` +
+          `schedule.json has nothing for ${keys[0]} to ${keys[4]}`
+        );
+        continue;
+      }
 
       section.querySelectorAll(".day").forEach((cell, index) => {
-        paint(cell, DAY_LETTERS[index], dates[index], collections[keys[index]], keys[index] === today);
+        paint(cell, DAY_LETTERS[index], dates[index], collections[keys[index]], keys[index] === focusKey);
       });
-      section.querySelector(".week-label").textContent = `Week of ${caption}`;
+      section.querySelector(".week-label").textContent = caption(now, collections, dates);
     }
   }
 
