@@ -433,7 +433,7 @@
 
     const pickup = PICKUPS[collections[localDate(focus)]];
     if (now.getHours() >= EVENING_STARTS) {
-      return pickup ? `Tomorrow morning: ${pickup.short}` : "Nothing out tomorrow";
+      return pickup ? `Tomorrow morning: ${pickup.short}` : "No pickup tomorrow";
     }
     return pickup ? `Today: ${pickup.short}` : "No collection today";
   }
