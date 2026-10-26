@@ -69,6 +69,8 @@
     --yard: rgb(176,101,0);
     --electronics: rgb(255,105,180);
     --large-other: rgb(255,255,0);
+    --zone-1: #7f1d2d;
+    --zone-2: #000;
     --ink: #000;
     --page: #fff;
     --rule: 2px solid var(--ink);
@@ -121,7 +123,7 @@
     content: "";
     position: absolute;
     top: 0; right: 0;
-    border-top: 3rem solid var(--flag);
+    border-top: 3rem solid var(--zone);
     border-left: 3rem solid transparent;
   }
 
@@ -234,7 +236,7 @@
 
   a.button.primary { background: var(--ink); color: var(--page); }
 
-  a.button:hover, button:hover { background: var(--flag, var(--garbage)); color: var(--ink); }
+  a.button:hover, button:hover { background: var(--zone, var(--ink)); color: var(--page); }
 
   a.button:focus-visible, button:focus-visible {
     outline: 3px solid var(--comingled);
@@ -258,6 +260,96 @@
   .note p { margin: 0 0 1rem; max-width: 34rem; }
 
   main > :last-child > :last-child { margin-bottom: 0; }
+
+  .map-frame {
+    position: relative;
+    border: var(--rule);
+    background: #f7f5f0;
+    width: 100%;
+    aspect-ratio: 881.7 / 1200;
+    max-height: 78vh;
+  }
+
+  .map-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+  .map-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem;
+    border: 0;
+    background: transparent;
+  }
+
+  .map-cover:hover { background: rgba(0,0,0,.04); }
+
+  .map-cover span {
+    background: var(--ink);
+    color: var(--page);
+    padding: .5rem .9rem;
+  }
+
+  .map-cover[hidden] { display: none; }
+
+  .zone.match { outline: 4px solid var(--zone); outline-offset: 4px; }
+
+  .zone.match h2::after {
+    content: "Your zone";
+    margin-left: .6rem;
+    padding: .1rem .4rem;
+    background: var(--zone);
+    color: var(--page);
+    font-family: var(--ui);
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 1.4rem;
+    height: .3rem;
+    margin-right: .4rem;
+    vertical-align: middle;
+    background: var(--zone-color);
+  }
+
+  .jump { margin: -.75rem 0 1.75rem; font-weight: 600; }
+
+  .finder { border-top: var(--rule); padding-top: 1.25rem; }
+
+  .finder h2 {
+    font-family: var(--display);
+    font-size: 1.6rem;
+    margin: 0 0 .75rem;
+  }
+
+  .finder label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: .3rem; }
+
+  .search { display: flex; max-width: 28rem; margin-bottom: .75rem; }
+
+  .search input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 1.1rem;
+    padding: .55rem .7rem;
+    border: var(--rule);
+    border-right: 0;
+    border-radius: 0;
+  }
+
+  .search input:focus-visible { outline: 3px solid var(--comingled); outline-offset: 2px; }
+
+  .verdict { min-height: 1.5em; margin: 0 0 1rem; font-size: 1.05rem; max-width: 34rem; }
+
+  .verdict button { padding: .2rem .6rem; margin-left: .3rem; font-size: .9rem; }
+
+  .fine { font-size: .85rem; margin: .75rem 0 0; max-width: 34rem; }
 </style>
 </head>
 <body>
@@ -300,8 +392,8 @@
   <p class="eyebrow">Village of Ossining</p>
   <h1>Sanitation &amp; Recycling</h1>
 </header>
-
-<section class="zone" data-zone="1" style="--flag: var(--large-other);">
+  
+<section class="zone" data-zone="1" style="--zone: var(--zone-1);">
   <h2>Zone 1</h2>
   <p class="week-label">A typical week</p>
   <div class="week">
@@ -327,7 +419,7 @@
   </div>
 </section>
 
-<section class="zone" data-zone="2" style="--flag: var(--electronics);">
+<section class="zone" data-zone="2" style="--zone: var(--zone-2);">
   <h2>Zone 2</h2>
   <p class="week-label">A typical week</p>
   <div class="week">
@@ -353,10 +445,23 @@
   </div>
 </section>
 
-<section class="note">
+<section class="finder" id="find">
   <h2>Which zone am I in?</h2>
-  <p>The Village also publishes this information <a href="https://www.villageofossiningny.gov/public-works/pages/sanitation-recycling">here</a>.</p>
-
+  <form class="find-form">
+    <label for="street">Your street</label>
+    <div class="search">
+      <input id="street" list="street-names" autocomplete="off" spellcheck="false"
+             placeholder="e.g. Spring St">
+      <button type="submit">Find</button>
+    </div>
+    <datalist id="street-names"></datalist>
+  </form>
+  <p class="verdict" role="status" aria-live="polite">Type your street, or click on the map.</p>
+  <div class="map-frame">
+    <iframe src="map.html" title="Map of Village of Ossining streets by collection zone"></iframe>
+    <button type="button" class="map-cover" aria-label="Use the map"><span>Tap to explore the map</span></button>
+  </div>
+  <p class="fine">Zones come from the Village's <a href="https://www.villageofossiningny.gov/public-works/pages/sanitation-recycling">published street list</a>.</p>
 </section>
 
 </main>
@@ -380,7 +485,7 @@
     large_metal_and_electronics: {
       flag: "electronics", icon: "garbage",
       label: "Garbage and large metal or electronics",
-      short: "Garbage + large metal/electronics" },
+      short: "Garbage + metal/electronics" },
     other_large_items: {
       flag: "large-other", icon: "garbage",
       label: "Garbage and other large items",
@@ -433,7 +538,7 @@
 
     const pickup = PICKUPS[collections[localDate(focus)]];
     if (now.getHours() >= EVENING_STARTS) {
-      return pickup ? `Tomorrow morning: ${pickup.short}` : "No pickup tomorrow";
+      return pickup ? `Tomorrow morning: ${pickup.short}` : "No collection tomorrow";
     }
     return pickup ? `Today: ${pickup.short}` : "No collection today";
   }
@@ -546,6 +651,132 @@
     button.parentNode.appendChild(note);
     setTimeout(() => note.remove(), 3000);
   }
+
+  const ZONE_OF = { "Mon/Thurs": 1, "Tues/Fri": 2 };
+
+  function mapReady(frame) {
+    return new Promise(resolve => {
+      const done = () => resolve(frame.contentWindow.ossMap);
+      if (frame.contentWindow && frame.contentWindow.ossMap) done();
+      else frame.addEventListener("load", done, { once: true });
+    });
+  }
+
+  function guardMap(holder) {
+    const cover = holder.querySelector(".map-cover");
+    if (!cover) return;
+    cover.addEventListener("click", () => { cover.hidden = true; });
+    new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) cover.hidden = false;
+    }).observe(holder);
+  }
+
+  function markZone(zone, scroll) {
+    for (const section of document.querySelectorAll("[data-zone]")) {
+      section.classList.toggle("match", section.dataset.zone === String(zone));
+    }
+    const target = zone && document.querySelector(`[data-zone="${zone}"]`);
+    if (target && scroll) target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  const zoneSwatch = zone =>
+    `<span class="swatch" style="--zone-color:var(--zone-${zone})" aria-hidden="true"></span>`;
+
+  const SUFFIX = {
+    avenue: "ave", street: "st", road: "rd", lane: "ln", drive: "dr", place: "pl",
+    court: "ct", terrace: "ter", circle: "cir", boulevard: "blvd", parkway: "pkwy",
+    north: "n", south: "s", east: "e", west: "w", mount: "mt", saint: "st"
+  };
+  const norm = name => name.toLowerCase().replace(/[.,']/g, "").trim()
+    .split(/\s+/).map(word => SUFFIX[word] || word).join(" ");
+
+  const REMEMBER = "ossining-street";
+  const remember = name => { try { localStorage.setItem(REMEMBER, name); } catch {} };
+  const recall = () => { try { return localStorage.getItem(REMEMBER); } catch { return null; } };
+
+  function describe(segments) {
+    if (!segments.length) return null;
+    const street = segments[0].street;
+    const zones = [...new Set(segments.map(s => ZONE_OF[s.day]).filter(Boolean))];
+    if (zones.length > 1) {
+      const parts = segments.map(s => `${zoneSwatch(ZONE_OF[s.day])}${s.notes}: Zone ${ZONE_OF[s.day]}`);
+      return { zone: null, html: `<b>${street}</b> is split. ${parts.join("; ")}.` };
+    }
+    if (zones.length === 1) {
+      const zone = zones[0];
+      const note = /^(Nos\.|Odd)/.test(segments[0].notes) ? ` (${segments[0].notes})` : "";
+      return {
+        zone,
+        html: `${zoneSwatch(zone)}<b>${street}</b> is in <b>Zone ${zone}</b>${note}. ` +
+              `<button type="button" data-goto="${zone}">See the week</button>`
+      };
+    }
+    const day = segments[0].day;
+    return {
+      zone: null,
+      html: day === "town_only"
+        ? `<b>${street}</b> is in the Town of Ossining, not the Village. The Village does not collect there.`
+        : `<b>${street}</b> is a private road. The Village does not collect there.`
+    };
+  }
+
+  (async () => {
+    const holder = document.querySelector(".map-frame");
+    guardMap(holder);
+    const map = await mapReady(holder.querySelector("iframe"));
+    const input = document.getElementById("street");
+    const verdict = document.querySelector(".verdict");
+
+    const names = [...new Set(map.streets().map(s => s.street))].sort();
+    document.getElementById("street-names").innerHTML =
+      names.map(name => `<option value="${name}">`).join("");
+    const lookup = typed => {
+      const key = norm(typed);
+      return names.find(name => norm(name) === key) ||
+             names.find(name => norm(name).startsWith(key));
+    };
+
+    function show(result, scroll) {
+      verdict.innerHTML = result.html;
+      markZone(result.zone, scroll);
+    }
+
+    function find(typed, scroll) {
+      if (!typed.trim()) return;
+      const name = lookup(typed);
+      if (!name) {
+        verdict.innerHTML = `No street called <b>${typed.replace(/</g, "&lt;")}</b> on the map. ` +
+          `Check the <a href="https://www.villageofossiningny.gov/sites/g/files/vyhlif4821/f/uploads/streets1.pdf">Village's street list</a>.`;
+        markZone(null);
+        return;
+      }
+      input.value = name;
+      remember(name);
+      show(describe(map.focus(name)), scroll);
+    }
+
+    document.querySelector(".find-form").addEventListener("submit", event => {
+      event.preventDefault();
+      find(input.value, false);
+    });
+    input.addEventListener("input", () => {
+      if (names.includes(input.value)) find(input.value, false);
+    });
+
+    map.onpick = picked => {
+      input.value = picked.street;
+      remember(picked.street);
+      show(describe(map.streets().filter(s => s.street === picked.street && s.day === picked.day)), false);
+    };
+
+    verdict.addEventListener("click", event => {
+      const zone = event.target.dataset && event.target.dataset.goto;
+      if (zone) markZone(zone, true);
+    });
+
+    const saved = recall();
+    if (saved) find(saved, false);
+  })();
 </script>
 </body>
 </html>
